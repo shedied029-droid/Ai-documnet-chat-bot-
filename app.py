@@ -1,33 +1,34 @@
 import streamlit as st
 import requests
 
-# 1. FIXED: Brought the layout back to "centered" so it doesn't shift left!
+# ==========================================
+# 1. PAGE CONFIGURATION
+# ==========================================
 st.set_page_config(page_title="AI Doc Chat", page_icon="🤖", layout="centered")
 
-# Custom CSS to mimic a clean dark/light minimal theme
+# Custom CSS to make the UI look like ChatGPT (taller chat box)
 st.markdown("""
     <style>
     .block-container { padding-top: 2rem; padding-bottom: 150px; }
-    
-    /* 2. FIXED: This forces the typing box to be permanently taller */
-    .stChatInput textarea {
-        min-height: 120px !important;
-    }
+    .stChatInput textarea { min-height: 120px !important; }
     </style>
 """, unsafe_allow_html=True)
 
 st.title("🤖 AI Document Chat")
-st.caption("Upload a document and ask questions instantly—clean, fast, and simple.")
+st.caption("Upload a document and ask questions instantly. Built for YouTube!")
 
-# Backend API URLs
-BACKEND_UPLOAD_URL = "https://your-backend-name.onrender.com/upload"
-BACKEND_CHAT_URL = "https://your-backend-name.onrender.com/chat"
-# Initialize chat history in session state so it stays on screen
+# ==========================================
+# 2. BACKEND CONNECTION SETUP (LOCAL HOST)
+# ==========================================
+# Make sure your FastAPI backend (main.py) is running on port 8000!
+BACKEND_UPLOAD_URL = "http://127.0.0.1:8000/upload"
+BACKEND_CHAT_URL = "http://127.0.0.1:8000/chat"
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 # ==========================================
-# SIDEBAR: SETTINGS & UPLOAD
+# 3. SIDEBAR: UPLOAD & SETTINGS
 # ==========================================
 with st.sidebar:
     st.header("📄 Document Center")
@@ -36,6 +37,7 @@ with st.sidebar:
     if uploaded_file is not None:
         if st.button("🚀 Process & Index Document", use_container_width=True):
             with st.spinner("Analyzing document structure..."):
+                # Send file to FastAPI backend
                 files = {"file": (uploaded_file.name, uploaded_file.getvalue(), "application/pdf")}
                 try:
                     response = requests.post(BACKEND_UPLOAD_URL, files=files)
@@ -44,7 +46,7 @@ with st.sidebar:
                     else:
                         st.error(f"❌ Error: {response.json().get('detail')}")
                 except Exception as e:
-                    st.error(f"Could not connect to backend: {e}")
+                    st.error("Could not connect to backend. Is main.py running?")
                     
     st.divider()
     
@@ -52,30 +54,30 @@ with st.sidebar:
     use_general_knowledge = st.toggle(
         "🧠 Enable General Knowledge", 
         value=False, 
-        help="Turn this on to allow the AI to give suggestions, improvements, and use its outside knowledge when the answer isn't in the PDF."
+        help="Turn this on to allow the AI to answer things outside the PDF."
     )
 
 # ==========================================
-# MAIN CHAT INTERFACE
+# 4. MAIN CHAT INTERFACE
 # ==========================================
 # Display previous chat messages cleanly
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Accept user chat input (Now much taller!)
-if user_question := st.chat_input("Ask something about your document..."):
+# Chat input box
+if user_question := st.chat_input("Ask something about your document... (Shift+Enter for new line)"):
     
-    # Display user message in chat message container
+    # Show user message
     with st.chat_message("user"):
         st.markdown(user_question)
     st.session_state.messages.append({"role": "user", "content": user_question})
 
-    # Generate response from FastAPI backend
+    # Get AI response from backend
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
             try:
-                # Pass the toggle state to the backend
+                # Send question and toggle state to backend
                 payload = {
                     "question": user_question,
                     "use_general_knowledge": use_general_knowledge
@@ -90,4 +92,4 @@ if user_question := st.chat_input("Ask something about your document..."):
                     error_msg = response.json().get("detail", "Unknown server error.")
                     st.error(f"Error: {error_msg}")
             except Exception as e:
-                st.error(f"Backend offline or unreachable: {e}")
+                st.error("Backend offline. Please start the FastAPI server.")
