@@ -15,7 +15,7 @@ main.py (FastAPI & AI Backend)
 app.py (Streamlit Frontend)
 
 ⚙️ Phase 1: Local Setup & Installation
-Get your free AI Key: Go to console.groq.com and create a free API Key. Paste this key into line 19 of your main.py file.
+Get your free AI Key: Go to console.groq.com and create a free API Key. Paste this key into line 19 of your main.py file. (i f u want u can i already attached one )
 
 Open your terminal: Navigate to your project folder.
 
